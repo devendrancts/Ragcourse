@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>The Complete Production RAG Masterclass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar-overlay" onclick="toggleSidebar()"></div>
+<nav class="sidebar">
+  <div class="sidebar-header">
+    <h1>RAG Masterclass</h1>
+    <p>Production-Grade Guide</p>
+  </div>
+  <div class="sidebar-nav">
+    <a href="#section-1"><span class="nav-num c1">1</span> Core RAG Foundation</a>
+    <a href="#section-2"><span class="nav-num c2">2</span> Chunking Variables</a>
+    <a href="#section-3"><span class="nav-num c3">3</span> Failure Modes &amp; Fixes</a>
+    <a href="#section-4"><span class="nav-num c4">4</span> Advanced Retrieval</a>
+    <a href="#section-5"><span class="nav-num c5">5</span> Vector DBs &amp; Scaling</a>
+    <a href="#section-6"><span class="nav-num c6">6</span> Production API</a>
+    <a href="#section-7"><span class="nav-num c7">7</span> Cutting-Edge RAG</a>
+    <a href="#section-8"><span class="nav-num c8">8</span> Evolution of RAG</a>
+  </div>
+</nav>
+
+<button class="sidebar-toggle" onclick="toggleSidebar()">&#9776;</button>
+
+<!-- Main Content -->
+<main class="main">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <h1>The Complete Production <span>RAG Masterclass</span></h1>
+      <p>From naive retrieval to production-grade agentic systems. Master every layer of the RAG stack with real code, architecture diagrams, and battle-tested patterns.</p>
+      <div class="hero-badges">
+        <span class="hero-badge">&#128218; 8 In-Depth Sections</span>
+        <span class="hero-badge">&#128187; Production Code</span>
+        <span class="hero-badge">&#128202; Architecture Diagrams</span>
+        <span class="hero-badge">&#9888;&#65039; Failure Mode Analysis</span>
+      </div>
+    </div>
+  </section>
+
+  <div class="content">
+
+    <!-- ================================================================ -->
+    <!-- SECTION 1: Core RAG Foundation -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-1">
+      <div class="section-header">
+        <span class="section-num c1">1</span>
+        <h2>Core RAG Foundation</h2>
+      </div>
+
+      <p>Retrieval-Augmented Generation (RAG) enhances LLMs by providing relevant external knowledge before generating a response. Instead of relying solely on training data, RAG <strong>grounds</strong> the model's response in actual retrieved documents, dramatically reducing hallucinations.</p>
+
+      <!-- DIAGRAM 1: Basic RAG Pipeline -->
+      <div class="diagram-container">
+        <div class="diagram-title">Basic RAG Pipeline</div>
+        <div class="flow-row">
+          <div class="flow-node fn-blue">&#128269; User Query</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-purple">&#128230; Retriever</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-cyan">&#128451; Vector DB</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-orange">&#128221; Prompt<small>Template</small></div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-pink">&#129302; LLM</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-green">&#9989; Answer</div>
+        </div>
+      </div>
+
+      <h3>The 5 Core Components</h3>
+      <table>
+        <thead><tr><th>Component</th><th>Role</th><th>Example</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-blue">User Query</span></td><td>Natural language question from the user</td><td>"What is the refund policy for premium plans?"</td></tr>
+          <tr><td><span class="tag tag-purple">Retriever</span></td><td>Searches vector store for relevant document chunks</td><td>Chroma retriever with k=3</td></tr>
+          <tr><td><span class="tag tag-orange">Prompt Template</span></td><td>Combines retrieved context with the user question</td><td>"Answer based ONLY on this context: {context}"</td></tr>
+          <tr><td><span class="tag tag-red">LLM</span></td><td>Generates an answer grounded in the provided context</td><td>GPT-4 with temperature=0</td></tr>
+          <tr><td><span class="tag tag-green">Output Parser</span></td><td>Structures the raw LLM output into desired format</td><td>StrOutputParser for plain text</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">&#128161;</span>
+        <div><strong>Critical Prompt Design:</strong> The prompt template MUST instruct the LLM: "Answer based only on the following context. If the context does not contain the answer, say I don't know." This is the primary defense against hallucination.</div>
+      </div>
+
+      <h3>Complete RAG Chain Setup</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+from langchain_chroma import Chroma
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.runnables import RunnablePassthrough
+
+# Create embeddings and vector store
+embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+vectorstore = Chroma.from_documents(chunks, embeddings)
+retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+
+# Prompt template
+template = """Answer based ONLY on this context. If unsure, say "I don't know."
+Context: {context}
+Question: {question}"""
+prompt = ChatPromptTemplate.from_template(template)
+
+# Build the chain
+rag_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | ChatOpenAI(model="gpt-4", temperature=0)
+    | StrOutputParser()
+)
+
+response = rag_chain.invoke("What is the refund policy?")</code></pre>
+      </div>
+
+      <h3>Adding Citations</h3>
+      <p>Citations let users verify the sources behind each answer. This function formats retrieved documents with their source metadata for transparency.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>def format_docs_with_sources(docs):
+    formatted = []
+    for i, doc in enumerate(docs, 1):
+        source = doc.metadata.get("source", "Unknown")
+        page = doc.metadata.get("page", "N/A")
+        formatted.append(f"[Source {i}: {source}, Page {page}]\n{doc.page_content}")
+    return "\n\n---\n\n".join(formatted)</code></pre>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 2: The 4 Critical Chunking Variables -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-2">
+      <div class="section-header">
+        <span class="section-num c2">2</span>
+        <h2>The 4 Critical Chunking Variables</h2>
+      </div>
+
+      <p>Chunking is the <strong>single biggest lever</strong> for retrieval quality. Bad chunks = bad embeddings = bad retrieval = bad answers. No amount of prompt engineering can fix poorly chunked data.</p>
+
+      <!-- DIAGRAM 2: Chunking Impact -->
+      <div class="diagram-container">
+        <div class="diagram-title">Chunking Impact on Retrieval</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#128196; Document</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-orange diamond">Chunking Strategy?</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-red">Too Small<small>&lt; 200 tokens</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-red-light">&#10060; Lost Context</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-green">Sweet Spot<small>200 - 1000 tokens</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-green-light">&#9989; Precise Retrieval</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-red">Too Large<small>&gt; 1000 tokens</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-red-light">&#10060; Diluted Embeddings</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Variable 1: Chunk Size</h3>
+      <table>
+        <thead><tr><th>Chunk Size</th><th>Use Case</th><th>Trade-off</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-blue">200-300 tokens</span></td><td>FAQ, short answers</td><td>High precision, low context</td></tr>
+          <tr><td><span class="tag tag-green">400-600 tokens</span></td><td>General documents</td><td>Balanced (recommended)</td></tr>
+          <tr><td><span class="tag tag-orange">800-1000 tokens</span></td><td>Technical/legal docs</td><td>More context, less precision</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Variable 2: Overlap</h3>
+      <div class="callout info">
+        <span class="callout-icon">&#8505;&#65039;</span>
+        <div><strong>Overlap is "cheap insurance"</strong> &mdash; it introduces small redundancy but prevents the case where answers are split across chunk boundaries. A typical overlap of 10-15% of chunk size works well (e.g., 50 tokens overlap for 500 token chunks).</div>
+      </div>
+
+      <h3>Variable 3: Split Boundaries &mdash; 4 Strategies</h3>
+
+      <!-- DIAGRAM 3: Chunking Strategies -->
+      <div class="diagram-container">
+        <div class="diagram-title">Chunking Strategies Comparison</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#9881; Chunking Strategies</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-red">Fixed-Size</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-red-light">&#128683; Avoid in<br>Production</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-green">Recursive</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-green-light">&#11088; Default<br>Choice</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-purple">Semantic</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-purple-light">&#128142; Best<br>Quality</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-cyan">Late Chunking</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-cyan-light">&#128640; Most<br>Advanced</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>Strategy</th><th>Quality</th><th>Speed</th><th>Cost</th><th>Best For</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-red">Fixed-Size</span></td><td>Poor</td><td>Fast</td><td>Free</td><td>Never use in production</td></tr>
+          <tr><td><span class="tag tag-green">Recursive</span></td><td>Good</td><td>Fast</td><td>Free</td><td>General text (default)</td></tr>
+          <tr><td><span class="tag tag-purple">Semantic</span></td><td>Excellent</td><td>Slow</td><td>$$$</td><td>High-quality unstructured text</td></tr>
+          <tr><td><span class="tag tag-blue">Late Chunking</span></td><td>Best</td><td>Slow</td><td>$$</td><td>When accuracy is paramount</td></tr>
+        </tbody>
+      </table>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code># Default: Recursive (hierarchical splitting)
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=500, chunk_overlap=50,
+    separators=["\n\n", "\n", ".", " ", ""]  # Priority order
+)
+
+# Best quality: Semantic (splits where topic changes)
+from langchain_experimental.text_splitter import SemanticChunker
+semantic = SemanticChunker(
+    embeddings=OpenAIEmbeddings(),
+    breakpoint_threshold_type="percentile",
+    breakpoint_threshold_amount=90
+)</code></pre>
+      </div>
+
+      <h3>Variable 4: Content Type</h3>
+      <p>Different content types require specialized splitters that understand their structure.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code># Markdown: splits by headers
+from langchain.text_splitter import MarkdownHeaderTextSplitter
+md_splitter = MarkdownHeaderTextSplitter(
+    headers_to_split_on=[("#", "H1"), ("##", "H2"), ("###", "H3")]
+)
+
+# Code: splits at function/class boundaries
+from langchain.text_splitter import Language
+code_splitter = RecursiveCharacterTextSplitter.from_language(
+    language=Language.PYTHON, chunk_size=500, chunk_overlap=50
+)
+
+# Legal/Technical: use SemanticChunker for coherent concepts</code></pre>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 3: The 5 Production Failure Modes -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-3">
+      <div class="section-header">
+        <span class="section-num c3">3</span>
+        <h2>The 5 Production Failure Modes</h2>
+      </div>
+
+      <p>Every production RAG system will fail. Knowing the failure modes in advance lets you design defenses. Here are the 5 most common ways RAG systems break and their fixes.</p>
+
+      <!-- DIAGRAM 4: 5 Failure Modes -->
+      <div class="diagram-container">
+        <div class="diagram-title">The 5 RAG Failure Modes &amp; Their Fixes</div>
+        <div class="failure-grid">
+          <div class="failure-item">
+            <div class="flow-node fn-red" style="width:100%">&#10060; Bad Chunking</div>
+            <div class="flow-arrow-down">&#9660;</div>
+            <div class="failure-fix">&#9989; 4 Chunking Variables</div>
+          </div>
+          <div class="failure-item">
+            <div class="flow-node fn-red" style="width:100%">&#10060; Embedding Mismatch</div>
+            <div class="flow-arrow-down">&#9660;</div>
+            <div class="failure-fix">&#9989; Same Model Always</div>
+          </div>
+          <div class="failure-item">
+            <div class="flow-node fn-red" style="width:100%">&#10060; Retrieval Noise</div>
+            <div class="flow-arrow-down">&#9660;</div>
+            <div class="failure-fix">&#9989; Hybrid Search</div>
+          </div>
+          <div class="failure-item">
+            <div class="flow-node fn-red" style="width:100%">&#10060; Context Overflow</div>
+            <div class="flow-arrow-down">&#9660;</div>
+            <div class="failure-fix">&#9989; Token Budgeting</div>
+          </div>
+          <div class="failure-item">
+            <div class="flow-node fn-red" style="width:100%">&#10060; Hallucination</div>
+            <div class="flow-arrow-down">&#9660;</div>
+            <div class="failure-fix">&#9989; Grounding Prompts</div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Failure Mode 1: Bad Chunking</h3>
+      <p>Solved by applying the 4 chunking variables from Section 2. Choose the right chunk size, overlap, split strategy, and content-type-aware splitter.</p>
+
+      <h3>Failure Mode 2: Embedding Mismatch</h3>
+      <div class="card-grid">
+        <div class="card"><h4>&#128274; Rule 1: Same Model</h4><p>Always use the exact same embedding model and version for both indexing and querying. Mixing models produces meaningless similarity scores.</p></div>
+        <div class="card"><h4>&#128207; Rule 2: Same Dimensions</h4><p>If using dimension reduction, use the same dimension at index and query time. A 512-dim query vector cannot match a 1536-dim index vector.</p></div>
+        <div class="card"><h4>&#128204; Rule 3: Version Lock</h4><p>Pin your embedding model version. When the provider updates the model, re-index everything or keep using the old version.</p></div>
+      </div>
+
+      <div class="callout danger">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div><strong>Critical Insight:</strong> 90% of RAG failures are retrieval failures, not generation failures. ALWAYS test your retrieval separately before blaming the LLM.</div>
+      </div>
+
+      <h3>Failure Mode 3: Retrieval Noise &mdash; Hybrid Search</h3>
+      <p>Pure vector search struggles with exact keywords, product codes (<code>SQ7742X</code>), acronyms (<code>WCAG</code>), and error codes. Hybrid search combines semantic understanding with keyword matching.</p>
+
+      <!-- DIAGRAM 5: Hybrid Search -->
+      <div class="diagram-container">
+        <div class="diagram-title">Hybrid Search Architecture</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#128269; User Query</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-purple">&#129520; Vector Search<small>Semantic matching</small></div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-orange">&#128220; BM25 Search<small>Keyword matching</small></div>
+            </div>
+          </div>
+          <div class="flow-arrow-down" style="margin-top:6px">&#9660; &#9660;</div>
+          <div class="flow-node fn-green">&#128256; Reciprocal Rank Fusion<small>Merge &amp; re-rank both lists</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-pink">&#127942; Best Results</div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
+
+vector_retriever = vectorstore.as_retriever(search_kwargs={"k": 3})
+bm25_retriever = BM25Retriever.from_documents(chunks, k=3)
+
+hybrid = EnsembleRetriever(
+    retrievers=[vector_retriever, bm25_retriever],
+    weights=[0.7, 0.3]  # 70% semantic, 30% keyword
+)
+results = hybrid.invoke("What is error SQ7742X?")</code></pre>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div><strong>BM25 Limitation:</strong> BM25 does NOT support incremental updates. It must be rebuilt every time new documents are added. Adds only 20-50ms latency but massively improves accuracy.</div>
+      </div>
+
+      <h3>Failure Mode 4: Context Overflow &mdash; Token Budgeting</h3>
+      <p>A single request with a 200-page contract can blow your entire daily token budget. Estimate and check <strong>before</strong> the API call.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>class TokenBudget:
+    def __init__(self, max_per_request=4000, max_per_day=1_000_000):
+        self.max_per_request = max_per_request
+        self.max_per_day = max_per_day
+        self.used_today = 0
+
+    def estimate_tokens(self, text: str) -> int:
+        return int(len(text) * 1.3)  # ~1.3 tokens per char for English
+
+    def check(self, text: str) -> bool:
+        est = self.estimate_tokens(text)
+        if est > self.max_per_request:
+            raise ValueError(f"Request too large: {est} tokens")
+        if self.used_today + est > self.max_per_day:
+            raise ValueError("Daily budget exceeded")
+        return True  # OK to proceed
+
+    def record(self, input_tokens: int, output_tokens: int):
+        self.used_today += input_tokens + output_tokens
+
+budget = TokenBudget()
+budget.check(context_text)  # Check BEFORE the API call = no cost</code></pre>
+      </div>
+
+      <h3>Failure Mode 5: Hallucination</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>GROUNDING_PROMPT = """Answer the question based ONLY on the provided context.
+Rules:
+1. If the context contains the answer, provide it with [Source N] citations.
+2. If the context does NOT contain the answer, say: "I don't know."
+3. NEVER make up information or use your training knowledge.
+4. Quote specific passages when possible.
+
+Context:
+{context}
+
+Question: {question}
+Answer:"""</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">&#128161;</span>
+        <div><strong>Key Insight:</strong> Fixing failure modes 1-4 <em>dramatically</em> reduces hallucination. Good chunks + good embeddings + hybrid search + token budgeting = high-quality context = far less hallucination.</div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 4: Advanced Retrieval Strategies -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-4">
+      <div class="section-header">
+        <span class="section-num c4">4</span>
+        <h2>Advanced Retrieval Strategies</h2>
+      </div>
+
+      <p>Once you have basic RAG working, these strategies significantly improve quality. Each addresses a specific limitation of naive retrieval.</p>
+
+      <h3>LangSmith Observability</h3>
+      <p>Before optimizing, you need to <strong>see</strong> what's happening. LangSmith traces every step: inputs, outputs, token counts, latency, and cost.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>from langsmith.run_helpers import traceable
+
+@traceable(name="rag_pipeline", tags=["production"])
+def rag_pipeline(query: str):
+    docs = retrieve_documents(query)      # Traced: input/output/latency
+    context = format_context(docs)         # Traced
+    answer = generate_answer(query, ctx)   # Traced: tokens, cost
+    return {"answer": answer, "sources": docs}
+
+# Every call logged to LangSmith dashboard with full trace tree</code></pre>
+      </div>
+
+      <h3>Parent Document Retriever</h3>
+      <p>Search on <strong>small, precise</strong> child chunks but return the <strong>larger parent</strong> chunk for full context. Best of both worlds.</p>
+
+      <!-- DIAGRAM 6: Parent Document Retriever -->
+      <div class="diagram-container">
+        <div class="diagram-title">Parent Document Retriever</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#128196; Documents</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-purple">Parent Splitter<small>800 chars &mdash; full context</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-cyan">Child Splitter<small>200 chars &mdash; precise search</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-dark">Embed &amp; Index children in Vector DB</div>
+          <div style="height:16px"></div>
+          <div class="flow-row">
+            <div class="flow-node fn-orange">&#128269; Query</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-teal">Search Children<small>Precise match</small></div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-green">&#128195; Return Parents<small>Full context</small></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>from langchain.retrievers import ParentDocumentRetriever
+from langchain.storage import InMemoryStore
+
+parent_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
+child_splitter = RecursiveCharacterTextSplitter(chunk_size=200, chunk_overlap=20)
+
+parent_retriever = ParentDocumentRetriever(
+    vectorstore=vectorstore,
+    docstore=InMemoryStore(),
+    child_splitter=child_splitter,
+    parent_splitter=parent_splitter,
+)
+parent_retriever.add_documents(documents)
+
+# Search hits small chunks, but returns large parent chunks
+results = parent_retriever.invoke("How do I refresh a token?")</code></pre>
+      </div>
+
+      <h3>Contextual Compression</h3>
+      <p>Retrieved chunks often contain noise alongside relevant info. An LLM extracts <strong>only the relevant portions</strong> before passing to the final generation step.</p>
+
+      <!-- DIAGRAM 7: Contextual Compression -->
+      <div class="diagram-container">
+        <div class="diagram-title">Contextual Compression Pipeline</div>
+        <div class="flow-row">
+          <div class="flow-node fn-blue">Query</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-purple">Retriever</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-col" style="gap:4px">
+            <div class="flow-node fn-red-light" style="font-size:.72rem">Chunk 1 + noise</div>
+            <div class="flow-node fn-red-light" style="font-size:.72rem">Chunk 2 + noise</div>
+            <div class="flow-node fn-red-light" style="font-size:.72rem">Chunk 3 + noise</div>
+          </div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-orange">&#9986; LLM<br>Compressor</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-col" style="gap:4px">
+            <div class="flow-node fn-green-light" style="font-size:.72rem">Extract 1 &#9989;</div>
+            <div class="flow-node fn-green-light" style="font-size:.72rem">Extract 2 &#9989;</div>
+            <div class="flow-node fn-green-light" style="font-size:.72rem">Extract 3 &#9989;</div>
+          </div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-pink">&#129302; LLM</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-green">Answer</div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import LLMChainExtractor
+
+compressor = LLMChainExtractor.from_llm(ChatOpenAI(temperature=0))
+compression_retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=vectorstore.as_retriever(),
+)
+
+# Returns only relevant portions -- up to 85% token reduction
+compressed = compression_retriever.invoke("What is the refund policy?")</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">&#128161;</span>
+        <div><strong>Token Savings:</strong> Up to 85% reduction in context tokens. Trade-off: one extra LLM call per retrieved chunk at query time.</div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 5: Vector Databases & Scaling -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-5">
+      <div class="section-header">
+        <span class="section-num c5">5</span>
+        <h2>Vector Databases &amp; Scaling</h2>
+      </div>
+
+      <p>The HNSW algorithm powers most vector databases. Understanding its two key parameters lets you tune the speed-accuracy trade-off.</p>
+
+      <h3>HNSW Parameters</h3>
+      <table>
+        <thead><tr><th>Parameter</th><th>What It Controls</th><th>Low Value</th><th>High Value</th></tr></thead>
+        <tbody>
+          <tr><td><strong>M</strong> (Max Connections)</td><td>Edges per node in graph</td><td>8-16: fast build, lower accuracy</td><td>32-64: slower build, higher accuracy</td></tr>
+          <tr><td><strong>EF</strong> (Search Effort)</td><td>Candidate list size during search</td><td>32-64: fast search</td><td>200-500: best results</td></tr>
+        </tbody>
+      </table>
+
+      <h4>Recommended Configurations</h4>
+      <table>
+        <thead><tr><th>Setting</th><th>M</th><th>EF</th><th>Use Case</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-blue">Prototype</span></td><td>16</td><td>40</td><td>Fast iteration, development</td></tr>
+          <tr><td><span class="tag tag-green">Balanced</span></td><td>16</td><td>100</td><td>Most production apps</td></tr>
+          <tr><td><span class="tag tag-purple">High Accuracy</span></td><td>32</td><td>200</td><td>Legal, medical, compliance</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout info">
+        <span class="callout-icon">&#8505;&#65039;</span>
+        <div><strong>The Trilemma:</strong> You cannot have all three: high accuracy, high speed, and small index. Pick two.</div>
+      </div>
+
+      <h3>Scaling Strategies</h3>
+
+      <!-- DIAGRAM 8: Scaling Decision -->
+      <div class="diagram-container">
+        <div class="diagram-title">Scaling Decision Tree</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">How many vectors?</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-orange">&lt; 5-10 Million</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-green">&#8593; Vertical Scaling<small>Bigger machine</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-green-light">Simple &bull; No latency<br>Single point of failure</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-pink">&gt; 10 Million</div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-purple">&#8596; Horizontal Scaling<small>Sharding</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-purple-light">Unlimited scale &bull; Complex<br>Requires query routing</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Cost Comparison at 50M Vectors</h3>
+      <table>
+        <thead><tr><th>Solution</th><th>Monthly Cost</th><th>Ops Burden</th><th>Control</th></tr></thead>
+        <tbody>
+          <tr><td>Pinecone (Managed)</td><td><strong>~$1,500+</strong></td><td>Zero</td><td>Limited</td></tr>
+          <tr><td>PGVector (Managed)</td><td><strong>~$400</strong></td><td>Low</td><td>Moderate</td></tr>
+          <tr><td>PGVector (Self-Hosted)</td><td><strong>~$300</strong></td><td>Significant</td><td>Full</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Cost Optimization Strategies</h3>
+      <div class="card-grid">
+        <div class="card"><h4>&#128200; Reduce Dimensions</h4><p>1536 &#10132; 512 dimensions = <strong>30-66% storage savings</strong> with minimal quality loss. <code>OpenAIEmbeddings(dimensions=512)</code></p></div>
+        <div class="card"><h4>&#128229; Quantization</h4><p>float32 &#10132; int8 = <strong>50-75% storage savings</strong>. Most vector databases support this natively.</p></div>
+        <div class="card"><h4>&#128190; Response Caching</h4><p>Cache common queries = <strong>50-80% API cost savings</strong>. Use SHA-256 hash of normalized query as cache key with TTL.</p></div>
+        <div class="card"><h4>&#128230; Batch Embedding</h4><p>Embed in batches, not one-by-one = <strong>20-40% overhead savings</strong>. Use <code>embed_documents()</code> not <code>embed_query()</code> in loop.</p></div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 6: Production API with FastAPI -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-6">
+      <div class="section-header">
+        <span class="section-num c6">6</span>
+        <h2>Production API with FastAPI</h2>
+      </div>
+
+      <p>A production RAG API needs rate limiting, security, caching, fallbacks, and observability. Here is the complete architecture.</p>
+
+      <!-- DIAGRAM 9: Production API Architecture -->
+      <div class="diagram-container">
+        <div class="diagram-title">Production API Request Flow</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#127760; Client Request</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-orange">&#128336; Rate Limiter<small>20 req/min per IP</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-red">&#128274; Security Pipeline<small>Sanitize + PII mask</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-red-light">&#128683; 400 Blocked<small>Injection detected</small></div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-col">
+                <div class="flow-node fn-purple">&#128451; Cache Lookup</div>
+                <div class="flow-arrow-down">&#9660;</div>
+                <div class="flow-branches">
+                  <div class="flow-branch">
+                    <div class="flow-node fn-green-light">&#9889; Cache HIT<small>Instant + free</small></div>
+                  </div>
+                  <div class="flow-branch">
+                    <div class="flow-col">
+                      <div class="flow-node fn-cyan">&#129302; LangGraph Agent</div>
+                      <div class="flow-arrow-down">&#9660;</div>
+                      <div class="flow-row">
+                        <div class="flow-node fn-green">GPT-4<small>Primary</small></div>
+                        <div class="flow-arrow">&#10132;</div>
+                        <div class="flow-node fn-orange">GPT-3.5<small>Fallback</small></div>
+                        <div class="flow-arrow">&#10132;</div>
+                        <div class="flow-node fn-red">Error<small>Graceful</small></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="flow-arrow-down">&#9660;</div>
+                <div class="flow-node fn-pink">&#128270; Output Validator<small>PII check</small></div>
+                <div class="flow-arrow-down">&#9660;</div>
+                <div class="flow-node fn-dark">&#128202; Metrics + Cache Store</div>
+              </div>
+            </div>
+          </div>
+          <div class="flow-arrow-down" style="margin-top:6px">&#9660;</div>
+          <div class="flow-node fn-green">&#9989; ChatResponse<small>answer + sources + metadata</small></div>
+        </div>
+      </div>
+
+      <h3>Project Structure</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">text</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>rag-api/
+├── config.py            # Pydantic Settings (validated env vars)
+├── models.py            # ChatRequest, ChatResponse, ErrorResponse
+├── security.py          # InputSanitizer + PIIDetector + OutputValidator
+├── cache.py             # ResponseCache with SHA-256 keys + TTL
+├── monitoring.py        # StructuredJSONLogger + MetricsCollector
+├── agent.py             # LangGraph agent with fallback state machine
+├── main.py              # FastAPI entry point
+├── Dockerfile           # Multi-stage, non-root user, healthcheck
+├── docker-compose.yaml  # Container orchestration
+└── render.yaml          # Render.com deployment blueprint</code></pre>
+      </div>
+
+      <h3>Security Pipeline</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>import re
+
+class InputSanitizer:
+    INJECTION_PATTERNS = [
+        re.compile(r"ignore\s+(all\s+)?previous\s+instructions", re.I),
+        re.compile(r"you\s+are\s+now", re.I),
+        re.compile(r"system\s*prompt\s*:", re.I),
+        re.compile(r"forget\s+(everything|all)", re.I),
+    ]
+
+    def check(self, text: str) -> tuple[bool, str]:
+        for p in self.INJECTION_PATTERNS:
+            if p.search(text):
+                return False, "Blocked: injection detected"
+        return True, "OK"
+
+class PIIDetector:
+    PATTERNS = {
+        "email": re.compile(r'\b[\w.+-]+@[\w-]+\.[\w.]+\b'),
+        "ssn":   re.compile(r'\b\d{3}-\d{2}-\d{4}\b'),
+        "phone": re.compile(r'\b\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b'),
+    }
+
+    def mask(self, text: str) -> str:
+        for pii_type, pattern in self.PATTERNS.items():
+            text = pattern.sub(f"[{pii_type.upper()} REDACTED]", text)
+        return text</code></pre>
+      </div>
+
+      <h3>LangGraph Agent with Fallback</h3>
+
+      <!-- DIAGRAM 10: LangGraph Fallback -->
+      <div class="diagram-container">
+        <div class="diagram-title">LangGraph Fallback State Machine</div>
+        <div class="flow-row">
+          <div class="flow-node fn-blue">&#9654; Start</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-green">&#129302; Primary LLM<small>GPT-4</small></div>
+          <div class="flow-arrow"><span class="flow-arrow-label">success</span>&#10132;</div>
+          <div class="flow-node fn-purple">&#9209; END</div>
+        </div>
+        <div class="flow-row" style="margin-top:8px">
+          <div style="width:90px"></div>
+          <div style="width:60px"></div>
+          <div class="flow-col">
+            <div class="flow-arrow-down"><span class="flow-arrow-label">error</span> &#9660;</div>
+            <div class="flow-node fn-orange">&#128260; Fallback LLM<small>GPT-3.5-turbo</small></div>
+            <div class="flow-arrow-down"><span class="flow-arrow-label">error</span> &#9660;</div>
+            <div class="flow-node fn-red">&#128721; Graceful Error<small>"Please try again later"</small></div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Deployment</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">dockerfile</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>FROM python:3.11-slim
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN useradd -m appuser && chown -R appuser /app
+USER appuser
+HEALTHCHECK --interval=30s CMD curl -f http://localhost:8000/health || exit 1
+EXPOSE 8000
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]</code></pre>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 7: Cutting-Edge RAG Techniques -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-7">
+      <div class="section-header">
+        <span class="section-num c7">7</span>
+        <h2>Cutting-Edge RAG Techniques</h2>
+      </div>
+
+      <p>These techniques represent the frontier of RAG. Each addresses fundamental limitations that simpler approaches cannot solve.</p>
+
+      <h3>Long Context vs. RAG</h3>
+      <table>
+        <thead><tr><th>Metric</th><th>Long Context (100k tokens)</th><th>RAG</th></tr></thead>
+        <tbody>
+          <tr><td>Cost per query</td><td><span class="tag tag-red">~$0.25</span></td><td><span class="tag tag-green">~$0.01</span></td></tr>
+          <tr><td>Latency</td><td><span class="tag tag-red">~45 seconds</span></td><td><span class="tag tag-green">~1 second</span></td></tr>
+          <tr><td>Best for</td><td>Small corpus, full-doc analysis</td><td>Large corpus, high volume, citations</td></tr>
+          <tr><td>Cost ratio</td><td colspan="2" style="text-align:center"><strong>Long context is ~1,200x more expensive</strong></td></tr>
+        </tbody>
+      </table>
+
+      <h3>Contextual Retrieval (Anthropic)</h3>
+      <p>Naive chunks lose context &mdash; a chunk saying "the company" has no meaning without knowing <em>which</em> company. This technique uses an LLM to prepend context to each chunk <strong>before embedding</strong>.</p>
+
+      <!-- DIAGRAM 11: Contextual Retrieval -->
+      <div class="diagram-container">
+        <div class="diagram-title">Contextual Retrieval Pipeline</div>
+        <div class="flow-row">
+          <div class="flow-node fn-blue">&#128196; Document</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-red">&#9986; Chunk</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-orange">&#129302; LLM adds<br>context</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-green">&#128220; Contextualized<br>Chunk</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-purple">&#128290; Embed</div>
+          <div class="flow-arrow">&#10132;</div>
+          <div class="flow-node fn-cyan">&#128451; Vector<br>Store</div>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="code-lang">python</span><button class="code-copy" onclick="copyCode(this)">Copy</button></div>
+        <pre><code>def add_context_to_chunk(full_doc: str, chunk: str, doc_title: str) -> str:
+    """Prepend LLM-generated context to a chunk before embedding."""
+    prompt = f"""Add a 50-word context to this chunk from "{doc_title}".
+Start with "This chunk is from..." and clarify pronouns/references.
+
+Document excerpt: {full_doc[:3000]}
+Chunk: {chunk}
+Context:"""
+    context = llm.invoke(prompt).content
+    return f"{context}\n\n{chunk}"
+
+# Apply at INDEX TIME (one-time cost: ~1-5 cents per doc)
+contextualized = [add_context_to_chunk(doc, c, title) for c in chunks]</code></pre>
+      </div>
+
+      <div class="callout tip">
+        <span class="callout-icon">&#128161;</span>
+        <div><strong>Impact:</strong> Reduces top-20 retrieval failures by <strong>49%</strong> alone and <strong>67%</strong> when combined with re-ranking. Cost is paid at index time, not query time.</div>
+      </div>
+
+      <h3>Agentic RAG (Self-Correcting)</h3>
+      <p>Traditional RAG is one-shot &mdash; if retrieval is poor, the LLM has no way to recover. Agentic RAG uses a LangGraph state machine that grades retrieval quality and retries with rewritten queries.</p>
+
+      <!-- DIAGRAM 12: Agentic RAG -->
+      <div class="diagram-container">
+        <div class="diagram-title">Agentic RAG &mdash; Self-Correcting Loop</div>
+        <div class="flow-col">
+          <div class="flow-node fn-blue">&#9654; Start</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-purple">&#128269; Retrieve</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-orange">&#127919; Grade Relevance<small>LLM scores 0-1</small></div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-node fn-cyan diamond">Relevant enough?</div>
+          <div class="flow-arrow-down">&#9660;</div>
+          <div class="flow-branches">
+            <div class="flow-branch">
+              <div class="flow-node fn-green">&#9989; Generate<small>High relevance</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-blue">END</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-pink">&#9999;&#65039; Rewrite Query<small>Low + retries left</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-purple-light">&#128260; Loop back<br>to Retrieve</div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-node fn-red">&#128721; Fallback<small>No retries left</small></div>
+              <div class="flow-arrow-down">&#9660;</div>
+              <div class="flow-node fn-blue">END</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <h3>Graph RAG (Microsoft)</h3>
+      <p>Traditional RAG retrieves isolated chunks. It cannot answer multi-hop questions like <em>"Who are the competitors of companies that John advises?"</em>. Graph RAG extracts entities and relationships into a knowledge graph.</p>
+
+      <!-- DIAGRAM 13: Knowledge Graph -->
+      <div class="diagram-container">
+        <div class="diagram-title">Knowledge Graph Example</div>
+        <div style="display:flex; flex-direction:column; gap:6px; align-items:center;">
+          <div class="graph-edge">
+            <span class="edge-node" style="background:#3b82f6">John Smith</span>
+            <span class="edge-label">advises</span>
+            <span class="edge-node" style="background:#8b5cf6">Tech Corp</span>
+            <span class="edge-label">competes with</span>
+            <span class="edge-node" style="background:#ec4899">Data Inc</span>
+          </div>
+          <div class="graph-edge">
+            <span class="edge-node" style="background:#3b82f6">John Smith</span>
+            <span class="edge-label">works at</span>
+            <span class="edge-node" style="background:#06b6d4">Advisory LLC</span>
+          </div>
+          <div class="graph-edge">
+            <span class="edge-node" style="background:#10b981">Jane Doe</span>
+            <span class="edge-label">founded</span>
+            <span class="edge-node" style="background:#8b5cf6">Tech Corp</span>
+          </div>
+          <div class="graph-edge">
+            <span class="edge-node" style="background:#f59e0b">Bob Lee</span>
+            <span class="edge-label">founded</span>
+            <span class="edge-node" style="background:#ec4899">Data Inc</span>
+          </div>
+          <div class="graph-edge">
+            <span class="edge-node" style="background:#10b981">Jane Doe</span>
+            <span class="edge-label">board member</span>
+            <span class="edge-node" style="background:#f59e0b">Global Fund</span>
+          </div>
+        </div>
+        <p style="margin-top:12px; font-size:.82rem; color:#64748b;"><strong>Multi-hop query:</strong> John &#10132; advises Tech Corp &#10132; competes with Data Inc &#10132; <strong>Answer: Data Inc</strong></p>
+      </div>
+
+      <h3>Multi-Modal RAG (ColPali)</h3>
+      <p>Text extraction from PDFs destroys visual context &mdash; table structures, charts, and diagrams are lost. ColPali embeds document pages as <strong>images</strong>, not text.</p>
+
+      <!-- DIAGRAM 14: Multi-Modal RAG -->
+      <div class="diagram-container">
+        <div class="diagram-title">Multi-Modal RAG with ColPali</div>
+        <div class="flow-col">
+          <div class="flow-row">
+            <div class="flow-node fn-blue">&#128196; PDF</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-purple">&#128444; Page Images</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-cyan">&#129302; ColPali<small>Embed images</small></div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-dark">&#128451; Vector Store</div>
+          </div>
+          <div style="height:12px"></div>
+          <div class="flow-row">
+            <div class="flow-node fn-orange">&#128269; Query</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-cyan">&#129302; ColPali<small>Embed query</small></div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-dark">&#128451; Search</div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-pink">&#128065; Vision LLM<small>GPT-4o / Claude</small></div>
+            <div class="flow-arrow">&#10132;</div>
+            <div class="flow-node fn-green">&#9989; Answer</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="callout warn">
+        <span class="callout-icon">&#9888;&#65039;</span>
+        <div><strong>Cost Warning:</strong> Multi-modal RAG is <strong>~10x more expensive</strong> than text-only RAG. Best for financial reports, technical diagrams, and documents with complex visual layouts.</div>
+      </div>
+    </div>
+
+    <!-- ================================================================ -->
+    <!-- SECTION 8: The Evolution of RAG -->
+    <!-- ================================================================ -->
+    <div class="section" id="section-8">
+      <div class="section-header">
+        <span class="section-num c8">8</span>
+        <h2>The Evolution of RAG</h2>
+      </div>
+
+      <p>RAG has evolved rapidly from simple "chunk and pray" pipelines to sophisticated agentic systems. Understanding this evolution helps you choose the right complexity for your use case.</p>
+
+      <!-- DIAGRAM 15: Evolution Timeline -->
+      <div class="diagram-container">
+        <div class="diagram-title">RAG Evolution Timeline</div>
+        <div class="flow-timeline">
+          <div class="flow-timeline-item">
+            <div class="flow-node fn-red" style="width:100%">2023<small>Naive RAG</small></div>
+            <div style="font-size:.75rem; color:#64748b; text-align:center; padding:4px 8px;">Chunk &#10132; Embed &#10132; Retrieve &#10132; Generate</div>
+          </div>
+          <div class="timeline-connector">&#10132;</div>
+          <div class="flow-timeline-item">
+            <div class="flow-node fn-orange" style="width:100%">2024<small>Optimized RAG</small></div>
+            <div style="font-size:.75rem; color:#64748b; text-align:center; padding:4px 8px;">+ Hybrid search, re-ranking, caching</div>
+          </div>
+          <div class="timeline-connector">&#10132;</div>
+          <div class="flow-timeline-item">
+            <div class="flow-node fn-purple" style="width:100%">2025<small>Intelligent RAG</small></div>
+            <div style="font-size:.75rem; color:#64748b; text-align:center; padding:4px 8px;">+ Contextual retrieval, self-correction</div>
+          </div>
+          <div class="timeline-connector">&#10132;</div>
+          <div class="flow-timeline-item">
+            <div class="flow-node fn-green" style="width:100%">2026+<small>Agentic RAG</small></div>
+            <div style="font-size:.75rem; color:#64748b; text-align:center; padding:4px 8px;">+ Autonomous, multi-modal, graph</div>
+          </div>
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>Year</th><th>Era</th><th>Key Features</th><th>Accuracy</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-red">2023</span></td><td>Naive RAG</td><td>Basic retrieval + generation, fixed chunking, no evaluation</td><td>~65%</td></tr>
+          <tr><td><span class="tag tag-orange">2024</span></td><td>Optimized RAG</td><td>Hybrid search, re-ranking, parent retrieval, compression, tracing</td><td>~80%</td></tr>
+          <tr><td><span class="tag tag-purple">2025</span></td><td>Intelligent RAG</td><td>Contextual retrieval, agentic patterns, self-correcting, Graph RAG</td><td>~90%</td></tr>
+          <tr><td><span class="tag tag-green">2026+</span></td><td>Agentic RAG</td><td>Autonomous agents, tool use, multi-modal, real-time learning</td><td>~95%</td></tr>
+        </tbody>
+      </table>
+
+      <h3>Minimum Production Stack (2026)</h3>
+      <div class="card-grid">
+        <div class="card"><h4>&#128204; Contextual Retrieval</h4><p><strong>49-67% fewer</strong> retrieval failures. Every chunk enriched with document-level context before embedding.</p></div>
+        <div class="card"><h4>&#127942; Re-ranking</h4><p>Cross-encoder re-ranks initial results for <strong>much higher precision</strong> at top positions.</p></div>
+        <div class="card"><h4>&#128260; Agentic Patterns</h4><p><strong>Self-correction:</strong> system detects poor retrieval, rewrites queries, and retries or falls back gracefully.</p></div>
+        <div class="card"><h4>&#128444; Multi-Modal</h4><p>Handle <strong>any document type:</strong> charts, tables, and diagrams processed as images, not lossy text extraction.</p></div>
+      </div>
+
+      <h3>Architecture Decision Matrix</h3>
+      <table>
+        <thead><tr><th>Situation</th><th>Recommended Stack</th><th>Expected Accuracy</th></tr></thead>
+        <tbody>
+          <tr><td>Prototype / POC</td><td><span class="tag tag-red">Naive RAG</span></td><td>65-75%</td></tr>
+          <tr><td>Internal tool (low stakes)</td><td><span class="tag tag-orange">Optimized RAG</span></td><td>75-85%</td></tr>
+          <tr><td>Customer-facing product</td><td><span class="tag tag-purple">Intelligent RAG</span></td><td>85-93%</td></tr>
+          <tr><td>Enterprise / regulated</td><td><span class="tag tag-green">Full Stack</span></td><td>90-97%</td></tr>
+        </tbody>
+      </table>
+
+      <div class="callout tip">
+        <span class="callout-icon">&#128161;</span>
+        <div><strong>The Future of RAG:</strong> The naive "chunk and pray" strategy is dead. The future is <strong>hybrid, agentic, and multi-modal</strong>. Start simple, measure, and add complexity only where it's needed. Each layer provides compounding improvements.</div>
+      </div>
+    </div>
+
+  </div><!-- end .content -->
+</main>
+
+<script>
+  function copyCode(button) {
+    const code = button.closest('.code-block').querySelector('code').innerText;
+    navigator.clipboard.writeText(code).then(() => {
+      button.textContent = 'Copied!';
+      setTimeout(() => { button.textContent = 'Copy'; }, 2000);
+    });
+  }
+
+  function toggleSidebar() {
+    document.querySelector('.sidebar').classList.toggle('open');
+    document.querySelector('.sidebar-overlay').classList.toggle('open');
+  }
+
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    link.addEventListener('click', () => {
+      document.querySelector('.sidebar').classList.remove('open');
+      document.querySelector('.sidebar-overlay').classList.remove('open');
+    });
+  });
+
+  const sections = document.querySelectorAll('.section');
+  const navLinks = document.querySelectorAll('.sidebar-nav a');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.getAttribute('id');
+        navLinks.forEach(link => {
+          link.classList.remove('active');
+          if (link.getAttribute('href') === '#' + id) link.classList.add('active');
+        });
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px', threshold: 0 });
+  sections.forEach(s => observer.observe(s));
+</script>
+
+</body>
+</html>
